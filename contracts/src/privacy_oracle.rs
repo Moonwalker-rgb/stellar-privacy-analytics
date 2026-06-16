@@ -95,6 +95,8 @@ impl PrivacyOracle {
         env.storage().instance().set(&symbol!("admin"), &admin);
 
         // Initialize default data source fees
+        // Keys are String (not SymbolShort) to align with consumer's
+        // `Map<String, i128>::get(data_source.clone())` read in `request_data`.
         let mut fees = Map::new(&env);
         fees.set(String::from_str(&env, "market_data"), &50000000i128); // 0.05 XLM
         fees.set(String::from_str(&env, "weather_data"), &20000000i128); // 0.02 XLM
