@@ -8,7 +8,7 @@ use soroban_sdk::String;
 use soroban_sdk::symbol_short;
 use soroban_sdk::Map;
 use soroban_sdk::BytesN;
-use soroban_sdk::xdr::ScVal;
+use soroban_sdk::crypto::sha256;
 
 #[cfg(any(test, feature = "clientgen"))]
 pub type PrivacyOracleClient = ();

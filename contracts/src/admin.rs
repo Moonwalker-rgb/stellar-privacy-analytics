@@ -507,6 +507,6 @@ impl MultiSigAdmin {
         data.push_back(transaction.nonce.into());
         data.push_back(transaction.executed.into());
         
-        sha256(&env, data.to_xdr(&env))
+        env.crypto().sha256(&data.to_xdr(&env))
     }
 }

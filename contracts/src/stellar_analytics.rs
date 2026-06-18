@@ -8,7 +8,6 @@ use soroban_sdk::String;
 use soroban_sdk::symbol_short;
 use soroban_sdk::Map;
 use soroban_sdk::BytesN;
-use soroban_sdk::xdr::ScVal;
 
 #[cfg(any(test, feature = "clientgen"))]
 pub type StellarAnalyticsClient = ();

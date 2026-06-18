@@ -32,11 +32,3 @@ panic = "abort"
 [profile.release-with-overflow]
 inherits = "release"
 overflow-checks = true
-
-[[bin]]
-name = "stellar_analytics"
-path = "src/stellar_analytics.rs"
-
-[[bin]]
-name = "privacy_oracle"
-path = "src/privacy_oracle.rs"

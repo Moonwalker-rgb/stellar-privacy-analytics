@@ -10,7 +10,6 @@ use soroban_sdk::symbol;
 use soroban_sdk::Map;
 use soroban_sdk::BytesN;
 use soroban_sdk::crypto::sha256;
-use soroban_sdk::xdr::ScVal;
 
 // Contract state storage keys
 const USER_PERMISSIONS_KEY: &str = "USER_PERMISSIONS";
