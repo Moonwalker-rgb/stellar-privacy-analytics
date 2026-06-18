@@ -70,23 +70,23 @@ interface StoredPreferences {
 // Detect GPU acceleration support
 function detectGpuAcceleration(): boolean {
   if (typeof window === 'undefined') return true;
-  
+
   // Check for hardware concurrency (CPU cores)
   const cores = navigator.hardwareConcurrency || 4;
-  
+
   // Check device memory (if available)
   const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory || 4;
-  
+
   // Check for touch device (often indicates mobile)
   const isTouchDevice = 'ontouchstart' in window;
-  
+
   // Check for low-power mode indicators
   const isLowPower = cores <= 2 || memory <= 2;
-  
+
   // Check for CSS transform3d support
-  const hasTransform3d = 'WebKitCSSMatrix' in window && 
-    'webkitTransform' in document.documentElement.style;
-  
+  const hasTransform3d =
+    'WebKitCSSMatrix' in window && 'webkitTransform' in document.documentElement.style;
+
   // If device is low-power but has transform3d, still allow animations
   // but they'll be simplified
   return hasTransform3d && !isLowPower;
@@ -113,7 +113,7 @@ export function AnimationProvider({
   children,
   defaultSpeed = 1,
   forceDisable = false,
-  performanceThreshold = 30
+  performanceThreshold = 30,
 }: AnimationProviderProps) {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(checkReducedMotion);
   const [userEnabled, setUserEnabled] = useState(() => {
@@ -137,16 +137,18 @@ export function AnimationProvider({
     return defaultSpeed;
   });
   const [hasGpuAcceleration] = useState(detectGpuAcceleration);
-  const [performanceIssues, setPerformanceIssues] = useState<Map<string, AnimationMetrics>>(new Map());
+  const [performanceIssues, setPerformanceIssues] = useState<Map<string, AnimationMetrics>>(
+    new Map()
+  );
 
   // Listen for reduced motion preference changes
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    
+
     const handleChange = (e: MediaQueryListEvent) => {
       setPrefersReducedMotion(e.matches);
     };
-    
+
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
@@ -155,7 +157,7 @@ export function AnimationProvider({
   useEffect(() => {
     const prefs: StoredPreferences = {
       enabled: userEnabled,
-      speed: animationSpeed
+      speed: animationSpeed,
     };
     localStorage.setItem(PREFERENCES_KEY, JSON.stringify(prefs));
   }, [userEnabled, animationSpeed]);
@@ -163,9 +165,10 @@ export function AnimationProvider({
   // Auto-disable animations if too many performance issues
   useEffect(() => {
     if (performanceIssues.size >= 3) {
-      const avgFps = Array.from(performanceIssues.values())
-        .reduce((sum, m) => sum + m.fps, 0) / performanceIssues.size;
-      
+      const avgFps =
+        Array.from(performanceIssues.values()).reduce((sum, m) => sum + m.fps, 0) /
+        performanceIssues.size;
+
       if (avgFps < performanceThreshold) {
         console.warn('Animations auto-disabled due to poor performance');
         setUserEnabled(false);
@@ -185,86 +188,91 @@ export function AnimationProvider({
     setAnimationSpeed(Math.max(0.25, Math.min(4, speed)));
   }, []);
 
-  const getAnimationProps = useCallback((baseProps: AnimationProps): OptimizedAnimationProps => {
-    const shouldAnimate = animationsEnabled && hasGpuAcceleration;
-    
-    if (!shouldAnimate) {
-      // Return static props for no animation
+  const getAnimationProps = useCallback(
+    (baseProps: AnimationProps): OptimizedAnimationProps => {
+      const shouldAnimate = animationsEnabled && hasGpuAcceleration;
+
+      if (!shouldAnimate) {
+        // Return static props for no animation
+        return {
+          style: {
+            transform: 'none',
+            opacity: baseProps.opacity ?? 1,
+            transition: 'none',
+          },
+          transition: 'none',
+          willChange: 'auto',
+          transform: 'none',
+          animationDuration: '0s',
+          animationTimingFunction: 'linear',
+          shouldAnimate: false,
+        };
+      }
+
+      // Build transform string
+      const transforms: string[] = [];
+
+      if (baseProps.scale !== undefined && baseProps.scale !== 1) {
+        transforms.push(`scale(${baseProps.scale})`);
+      }
+      if (baseProps.rotate !== undefined && baseProps.rotate !== 0) {
+        transforms.push(`rotate(${baseProps.rotate}deg)`);
+      }
+      if (baseProps.translateX !== undefined) {
+        const x =
+          typeof baseProps.translateX === 'number'
+            ? `${baseProps.translateX}px`
+            : baseProps.translateX;
+        transforms.push(`translateX(${x})`);
+      }
+      if (baseProps.translateY !== undefined) {
+        const y =
+          typeof baseProps.translateY === 'number'
+            ? `${baseProps.translateY}px`
+            : baseProps.translateY;
+        transforms.push(`translateY(${y})`);
+      }
+      if (baseProps.transform) {
+        transforms.push(baseProps.transform);
+      }
+
+      const transform = transforms.length > 0 ? transforms.join(' ') : 'none';
+
+      // Calculate duration with speed multiplier
+      const duration = (baseProps.duration ?? 300) / animationSpeed;
+      const delay = (baseProps.delay ?? 0) / animationSpeed;
+      const easing = baseProps.easing ?? 'cubic-bezier(0.4, 0, 0.2, 1)';
+
+      // Determine will-change for GPU acceleration hint
+      const willChangeParts: string[] = [];
+      if (transforms.length > 0) willChangeParts.push('transform');
+      if (baseProps.opacity !== undefined) willChangeParts.push('opacity');
+      const willChange = willChangeParts.length > 0 ? willChangeParts.join(', ') : 'auto';
+
+      const transition = shouldAnimate
+        ? `transform ${duration}ms ${easing} ${delay}ms${baseProps.opacity !== undefined ? `, opacity ${duration}ms ${easing} ${delay}ms` : ''}`
+        : 'none';
+
       return {
         style: {
-          transform: 'none',
-          opacity: baseProps.opacity ?? 1,
-          transition: 'none'
+          transform,
+          opacity: baseProps.opacity,
+          transition,
+          willChange,
         },
-        transition: 'none',
-        willChange: 'auto',
-        transform: 'none',
-        animationDuration: '0s',
-        animationTimingFunction: 'linear',
-        shouldAnimate: false
-      };
-    }
-
-    // Build transform string
-    const transforms: string[] = [];
-    
-    if (baseProps.scale !== undefined && baseProps.scale !== 1) {
-      transforms.push(`scale(${baseProps.scale})`);
-    }
-    if (baseProps.rotate !== undefined && baseProps.rotate !== 0) {
-      transforms.push(`rotate(${baseProps.rotate}deg)`);
-    }
-    if (baseProps.translateX !== undefined) {
-      const x = typeof baseProps.translateX === 'number' 
-        ? `${baseProps.translateX}px` 
-        : baseProps.translateX;
-      transforms.push(`translateX(${x})`);
-    }
-    if (baseProps.translateY !== undefined) {
-      const y = typeof baseProps.translateY === 'number' 
-        ? `${baseProps.translateY}px` 
-        : baseProps.translateY;
-      transforms.push(`translateY(${y})`);
-    }
-    if (baseProps.transform) {
-      transforms.push(baseProps.transform);
-    }
-
-    const transform = transforms.length > 0 ? transforms.join(' ') : 'none';
-    
-    // Calculate duration with speed multiplier
-    const duration = (baseProps.duration ?? 300) / animationSpeed;
-    const delay = (baseProps.delay ?? 0) / animationSpeed;
-    const easing = baseProps.easing ?? 'cubic-bezier(0.4, 0, 0.2, 1)';
-
-    // Determine will-change for GPU acceleration hint
-    const willChangeParts: string[] = [];
-    if (transforms.length > 0) willChangeParts.push('transform');
-    if (baseProps.opacity !== undefined) willChangeParts.push('opacity');
-    const willChange = willChangeParts.length > 0 ? willChangeParts.join(', ') : 'auto';
-
-    const transition = shouldAnimate
-      ? `transform ${duration}ms ${easing} ${delay}ms${baseProps.opacity !== undefined ? `, opacity ${duration}ms ${easing} ${delay}ms` : ''}`
-      : 'none';
-
-    return {
-      style: {
-        transform,
-        opacity: baseProps.opacity,
         transition,
-        willChange
-      },
-      transition,
-      willChange,
-      transform,
-      animationDuration: `${duration}ms`,
-      animationTimingFunction: easing,
-      shouldAnimate: true
-    };
-  }, [animationsEnabled, hasGpuAcceleration, animationSpeed]);
+        willChange,
+        transform,
+        animationDuration: `${duration}ms`,
+        animationTimingFunction: easing,
+        shouldAnimate: true,
+      };
+    },
+    [animationsEnabled, hasGpuAcceleration, animationSpeed]
+  );
 
   const reportPerformanceIssue = useCallback((animationId: string, metrics: AnimationMetrics) => {
-    setPerformanceIssues(prev => {
+    setPerformanceIssues((prev) => {
       const next = new Map(prev);
       next.set(animationId, metrics);
       // Keep only last 10 issues
@@ -284,14 +292,10 @@ export function AnimationProvider({
     setAnimationsEnabled,
     setAnimationSpeed: setAnimationSpeedWithClamp,
     getAnimationProps,
-    reportPerformanceIssue
+    reportPerformanceIssue,
   };
 
-  return (
-    <AnimationContext.Provider value={value}>
-      {children}
-    </AnimationContext.Provider>
-  );
+  return <AnimationContext.Provider value={value}>{children}</AnimationContext.Provider>;
 }
 
 // Hook for animated components
@@ -312,7 +316,7 @@ export function useAnimatedTransition(
     exitDelay = 0,
     easing = 'cubic-bezier(0.4, 0, 0.2, 1)',
     onEnter,
-    onExit
+    onExit,
   } = options;
 
   const { animationsEnabled, animationSpeed, getAnimationProps } = useAnimationContext();
@@ -344,14 +348,14 @@ export function useAnimatedTransition(
     delay: isVisible ? adjustedEnterDelay : adjustedExitDelay,
     easing,
     opacity: isVisible ? 1 : 0,
-    scale: isVisible ? 1 : 0.95
+    scale: isVisible ? 1 : 0.95,
   });
 
   return {
     shouldRender,
     isAnimating,
     animationProps,
-    isReducedMotion: !animationsEnabled
+    isReducedMotion: !animationsEnabled,
   };
 }
 
@@ -366,20 +370,20 @@ export function useAnimationPerformance(animationId: string) {
     if (!animationsEnabled) return;
 
     let lastTime = performance.now();
-    
+
     const measureFrame = (currentTime: number) => {
       const frameTime = currentTime - lastTime;
       frameTimesRef.current.push(frameTime);
       lastTime = currentTime;
-      
+
       // Keep only last 60 frames
       if (frameTimesRef.current.length > 60) {
         frameTimesRef.current.shift();
       }
-      
+
       animationFrameRef.current = requestAnimationFrame(measureFrame);
     };
-    
+
     animationFrameRef.current = requestAnimationFrame(measureFrame);
   }, [animationsEnabled]);
 
@@ -393,17 +397,17 @@ export function useAnimationPerformance(animationId: string) {
     if (frameTimes.length > 0) {
       const avgFrameTime = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
       const fps = 1000 / avgFrameTime;
-      const droppedFrames = frameTimes.filter(t => t > 33).length; // > 30fps threshold
-      
+      const droppedFrames = frameTimes.filter((t) => t > 33).length; // > 30fps threshold
+
       if (fps < 30 || droppedFrames > 10) {
         reportPerformanceIssue(animationId, {
           fps,
           frameTime: avgFrameTime,
-          droppedFrames
+          droppedFrames,
         });
       }
     }
-    
+
     frameTimesRef.current = [];
   }, [animationId, reportPerformanceIssue]);
 
@@ -430,21 +434,24 @@ export function useStaggeredAnimation(
   const { staggerDelay = 50, duration = 300, easing } = options;
   const { animationsEnabled, animationSpeed, getAnimationProps } = useAnimationContext();
 
-  const getStaggeredProps = useCallback((index: number) => {
-    const delay = (index * staggerDelay) / animationSpeed;
-    return getAnimationProps({
-      duration,
-      delay,
-      easing,
-      opacity: 1,
-      translateY: 0
-    });
-  }, [staggerDelay, duration, easing, animationSpeed, getAnimationProps]);
+  const getStaggeredProps = useCallback(
+    (index: number) => {
+      const delay = (index * staggerDelay) / animationSpeed;
+      return getAnimationProps({
+        duration,
+        delay,
+        easing,
+        opacity: 1,
+        translateY: 0,
+      });
+    },
+    [staggerDelay, duration, easing, animationSpeed, getAnimationProps]
+  );
 
   return {
     getStaggeredProps,
     totalDuration: (duration + (itemCount - 1) * staggerDelay) / animationSpeed,
-    isReducedMotion: !animationsEnabled
+    isReducedMotion: !animationsEnabled,
   };
 }
 

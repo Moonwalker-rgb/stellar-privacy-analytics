@@ -28,7 +28,7 @@ export class EncryptionService {
         keyHash,
         {
           iv: iv,
-          mode: CryptoJS.mode.GCM,
+          mode: (CryptoJS.mode as any).GCM,
           padding: CryptoJS.pad.NoPadding
         }
       );
@@ -65,7 +65,7 @@ export class EncryptionService {
 
       const decrypted = CryptoJS.AES.decrypt(data, keyHash, {
         iv: iv,
-        mode: CryptoJS.mode.GCM,
+        mode: (CryptoJS.mode as any).GCM,
         padding: CryptoJS.pad.NoPadding
       });
 

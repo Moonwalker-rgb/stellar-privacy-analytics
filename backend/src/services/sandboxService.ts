@@ -70,20 +70,20 @@ export class SandboxService {
     };
 
     // Store in Redis for webhooks and indexing
-    await this.redisClient.setex(
+    await this.redisClient.setEx(
       `sandbox:subscription_billed:${eventId}`,
       86400, // 24 hours
       JSON.stringify(event)
     );
 
     // Add to subscription history
-    await this.redisClient.lpush(
+    await this.redisClient.lPush(
       `sandbox:subscription:${data.subscriptionId}:billing_events`,
       JSON.stringify(event)
     );
     
     // Trim list to last 100 events
-    await this.redisClient.ltrim(`sandbox:subscription:${data.subscriptionId}:billing_events`, 0, 99);
+    await this.redisClient.lTrim(`sandbox:subscription:${data.subscriptionId}:billing_events`, 0, 99);
 
     // Emit to internal indexer (simulate)
     await this.emitToIndexer('SubscriptionBilled', event);
@@ -120,14 +120,14 @@ export class SandboxService {
     };
 
     // Store in Redis
-    await this.redisClient.setex(
+    await this.redisClient.setEx(
       `sandbox:grace_period:${gracePeriodId}`,
       data.gracePeriodDays * 86400, // Duration of grace period
       JSON.stringify(gracePeriod)
     );
 
     // Add to subscription grace periods
-    await this.redisClient.lpush(
+    await this.redisClient.lPush(
       `sandbox:subscription:${data.subscriptionId}:grace_periods`,
       JSON.stringify(gracePeriod)
     );
@@ -165,14 +165,14 @@ export class SandboxService {
     };
 
     // Store in Redis
-    await this.redisClient.setex(
+    await this.redisClient.setEx(
       `sandbox:dunning:${dunningId}`,
       86400 * 30, // 30 days
       JSON.stringify(dunningProcess)
     );
 
     // Add to subscription dunning history
-    await this.redisClient.lpush(
+    await this.redisClient.lPush(
       `sandbox:subscription:${data.subscriptionId}:dunning`,
       JSON.stringify(dunningProcess)
     );
@@ -212,7 +212,7 @@ export class SandboxService {
   }
 
   private async getSubscriptionBillingEvents(subscriptionId: string): Promise<SubscriptionBilledEvent[]> {
-    const events = await this.redisClient.lrange(
+    const events = await this.redisClient.lRange(
       `sandbox:subscription:${subscriptionId}:billing_events`,
       0,
       -1
@@ -222,7 +222,7 @@ export class SandboxService {
   }
 
   private async getSubscriptionGracePeriods(subscriptionId: string): Promise<GracePeriod[]> {
-    const gracePeriods = await this.redisClient.lrange(
+    const gracePeriods = await this.redisClient.lRange(
       `sandbox:subscription:${subscriptionId}:grace_periods`,
       0,
       -1
@@ -232,7 +232,7 @@ export class SandboxService {
   }
 
   private async getSubscriptionDunningProcesses(subscriptionId: string): Promise<DunningProcess[]> {
-    const dunningProcesses = await this.redisClient.lrange(
+    const dunningProcesses = await this.redisClient.lRange(
       `sandbox:subscription:${subscriptionId}:dunning`,
       0,
       -1
@@ -271,7 +271,7 @@ export class SandboxService {
       });
 
       // Store notification result
-      await this.redisClient.setex(
+      await this.redisClient.setEx(
         `sandbox:notification:${dunningProcess.dunningId}`,
         86400,
         JSON.stringify({
@@ -296,10 +296,10 @@ export class SandboxService {
       };
 
       // Store in indexer queue
-      await this.redisClient.lpush('sandbox:indexer:events', JSON.stringify(indexerEvent));
+      await this.redisClient.lPush('sandbox:indexer:events', JSON.stringify(indexerEvent));
       
       // Trim queue to last 1000 events
-      await this.redisClient.ltrim('sandbox:indexer:events', 0, 999);
+      await this.redisClient.lTrim('sandbox:indexer:events', 0, 999);
 
       logger.debug('Event emitted to indexer', { eventType, eventId: data.eventId || data.gracePeriodId || data.dunningId });
     } catch (error) {

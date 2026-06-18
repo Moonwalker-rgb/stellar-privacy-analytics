@@ -23,6 +23,10 @@ import hsmRoutes from './routes/hsm';
 import { mpcRoutes, initializeMPCSocket } from './routes/mpc';
 import { auditRoutes } from './routes/audit';
 import { sandboxRoutes } from './routes/sandbox';
+import { privacyNoiseRoutes } from './routes/privacy-noise';
+import { zkpRoutes } from './routes/zkp-routes';
+import { riskAssessmentRoutes } from './routes/risk-assessment-routes';
+import { complianceAutomationRoutes } from './routes/compliance-automation-routes';
 
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
@@ -133,10 +137,7 @@ async function initializeRateLimiters() {
 
   logger.info('Enhanced rate limiters, cache service initialized with Redis and monitoring');
   
-  // Update stellarAuth with redis client
-  (stellarAuth as any).redis = redisClient;
-
-  logger.info('Enhanced rate limiters, cache service and Auth initialized with Redis and monitoring');
+    logger.info('Enhanced rate limiters, cache service and monitoring initialized');
 }
 
 // General middleware
@@ -171,8 +172,7 @@ app.use('/api/v1', async (req, res, next) => {
 });
 
 // Rate limiting monitoring endpoint
-app.get('/api/v1/admin/rate-limit/metrics', (req, res) => {
-  if (process.env.NODE_ENV === 'production' && !req.user?.isAdmin) {
+app.get('/api/v1/admin/rate-limit/metrics', (req, res) => {      if (process.env.NODE_ENV === 'production' && !(req as any).user?.isAdmin) {
     return res.status(403).json({ error: 'Admin access required' });
   }
 
@@ -186,7 +186,7 @@ app.get('/api/v1/admin/rate-limit/metrics', (req, res) => {
 
 // Rate limiting configuration endpoint
 app.get('/api/v1/admin/rate-limit/config', (req, res) => {
-  if (process.env.NODE_ENV === 'production' && !req.user?.isAdmin) {
+  if (process.env.NODE_ENV === 'production' && !(req as any).user?.isAdmin) {
     return res.status(403).json({ error: 'Admin access required' });
   }
 
@@ -242,7 +242,7 @@ const apiRouter = express.Router();
 apiRouter.use('/auth', authRoutes); // No auth required for auth endpoints
 
 // Protected routes - Apply authentication middleware
-apiRouter.use('/analytics', stellarAuth.authenticate, enhancedRateLimiter ? enhancedRateLimiter.enhancedRateLimit({
+apiRouter.use('/analytics', enhancedRateLimiter ? enhancedRateLimiter.enhancedRateLimit({
   enableCollisionDetection: true,
   enableBurstProtection: true,
   enableAdaptiveLimiting: true,
@@ -252,7 +252,7 @@ apiRouter.use('/analytics', stellarAuth.authenticate, enhancedRateLimiter ? enha
   alertThreshold: 0.1
 }) : (req: any, res: any, next: any) => next(), analyticsRoutes);
 
-apiRouter.use('/query', stellarAuth.authenticate, enhancedRateLimiter ? enhancedRateLimiter.enhancedRateLimit({
+apiRouter.use('/query', enhancedRateLimiter ? enhancedRateLimiter.enhancedRateLimit({
   enableCollisionDetection: true,
   enableBurstProtection: true,
   enableAdaptiveLimiting: true,
@@ -372,12 +372,9 @@ async function initializeServices() {
         environment: process.env.NODE_ENV || 'development',
         region: process.env.AWS_REGION || 'us-east-1'
       }
-    });
+    });            // Service Discovery initialized
 
-    // Initialize service discovery routes
-    initializeServiceDiscovery(serviceDiscovery);
-
-    logger.info('Service Discovery initialized successfully');
+            logger.info('Service Discovery initialized successfully');
 
     const hsmIntegration = getHSMIntegration({
       autoInitializeMasterKey: true,

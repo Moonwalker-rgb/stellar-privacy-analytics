@@ -1,6 +1,8 @@
 import * as https from 'https';
 import * as tls from 'tls';
 import * as fs from 'fs';
+import { Server } from 'https';
+import { TLSSocket, connect as tlsConnect, createServer as tlsCreateServer } from 'tls';
 import { EventEmitter } from 'events';
 import { logger } from '../../utils/logger';
 
@@ -29,13 +31,13 @@ export class TLSTunnel extends EventEmitter {
   async startServer(port: number): Promise<void> {
     try {
       // Validate certificate files exist
-      if (!existsSync(this.certPath) || !existsSync(this.keyPath)) {
+      if (!fs.existsSync(this.certPath) || !fs.existsSync(this.keyPath)) {
         throw new Error(`Certificate files not found: ${this.certPath}, ${this.keyPath}`);
       }
 
       const options: any = {
-        key: readFileSync(this.keyPath),
-        cert: readFileSync(this.certPath),
+        key: fs.readFileSync(this.keyPath),
+        cert: fs.readFileSync(this.certPath),
         minVersion: 'TLSv1.3',
         maxVersion: 'TLSv1.3',
         requestCert: true,
@@ -43,12 +45,12 @@ export class TLSTunnel extends EventEmitter {
       };
 
       // Add CA certificate if provided
-      if (this.caPath && existsSync(this.caPath)) {
-        options.ca = readFileSync(this.caPath);
+      if (this.caPath && fs.existsSync(this.caPath)) {
+        options.ca = fs.readFileSync(this.caPath);
       }
 
-      this.server = createServer(options, (socket) => {
-        this.handleConnection(socket);
+      this.server = https.createServer(options, (socket) => {
+        this.handleConnection(socket as TLSSocket);
       });
 
       this.server.listen(port, () => {
@@ -77,17 +79,17 @@ export class TLSTunnel extends EventEmitter {
         port,
         minVersion: 'TLSv1.3',
         maxVersion: 'TLSv1.3',
-        cert: readFileSync(this.certPath),
-        key: readFileSync(this.keyPath),
+        cert: fs.readFileSync(this.certPath),
+        key: fs.readFileSync(this.keyPath),
         rejectUnauthorized: true,
       };
 
       // Add CA certificate if provided
-      if (this.caPath && existsSync(this.caPath)) {
-        options.ca = readFileSync(this.caPath);
+      if (this.caPath && fs.existsSync(this.caPath)) {
+        options.ca = fs.readFileSync(this.caPath);
       }
 
-      const socket = connect(options, () => {
+      const socket = tlsConnect(options, () => {
         logger.info(`Connected to MPC node ${remoteNodeId} at ${host}:${port}`);
         this.connections.set(remoteNodeId, socket);
         this.emit('connected', remoteNodeId);

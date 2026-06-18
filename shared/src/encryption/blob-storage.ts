@@ -1,4 +1,4 @@
-import { create } from 'ipfs-http-client';
+import type { IPFSHTTPClient } from 'ipfs-http-client';
 import FormData from 'form-data';
 import axios from 'axios';
 import { 
@@ -49,9 +49,9 @@ export class EncryptedBlobStorageAdapter {
       ...config
     };
     
-    // Initialize IPFS client
+    // Initialize IPFS client lazily (ipfs-http-client is ESM-only)
     if (this.config.nodeUrl) {
-      this.ipfsClient = create({ url: this.config.nodeUrl });
+      this.initIPFSClient(this.config.nodeUrl);
     }
     
     this.keyManager = keyManager;
@@ -59,6 +59,24 @@ export class EncryptedBlobStorageAdapter {
     this.ledgerManager = new StellarLedgerManager();
   }
   
+  /**
+   * Initialize IPFS client via dynamic import (ESM-only package)
+   */
+  private initIPFSClient(nodeUrl: string): void {
+    // Deferred initialization - will be set on first use
+    this._ipfsNodeUrl = nodeUrl;
+  }
+
+  private _ipfsNodeUrl?: string;
+
+  private async getIPFSClient(): Promise<any> {
+    if (!this.ipfsClient && this._ipfsNodeUrl) {
+      const { create } = await import('ipfs-http-client');
+      this.ipfsClient = create({ url: this._ipfsNodeUrl });
+    }
+    return this.ipfsClient;
+  }
+
   /**
    * Encrypt and upload data to IPFS/Filecoin
    */
@@ -263,7 +281,7 @@ export class EncryptedBlobStorageAdapter {
    * Upload data to IPFS node
    */
   private async uploadToIPFS(data: Buffer): Promise<string> {
-    if (this.ipfsClient) {
+    if (await this.getIPFSClient()) {
       const result = await this.ipfsClient.add(data);
       return result.cid.toString();
     } else if (this.config.pinataApiKey && this.config.pinataSecretKey) {
@@ -300,7 +318,7 @@ export class EncryptedBlobStorageAdapter {
    * Download data from IPFS
    */
   private async downloadFromIPFS(cid: string): Promise<Buffer> {
-    if (this.ipfsClient) {
+    if (await this.getIPFSClient()) {
       const chunks = [];
       for await (const chunk of this.ipfsClient.cat(cid)) {
         chunks.push(chunk);

@@ -48,9 +48,11 @@ export interface MetadataIndex {
 
 export class MetadataRepository {
   private isReadReplica: boolean;
+  private pool: any; // Database pool (PostgreSQL Pool)
 
   constructor(private db: DatabaseService, options: { isReadReplica?: boolean } = {}) {
     this.isReadReplica = options.isReadReplica || false;
+    this.pool = (this.db as any).pool || this.db;
     
     logger.info('Metadata Repository initialized', {
       isReadReplica: this.isReadReplica,

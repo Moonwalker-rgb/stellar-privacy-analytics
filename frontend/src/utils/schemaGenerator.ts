@@ -74,18 +74,18 @@ export class SchemaGenerator {
       type: 'object',
       properties: {},
       required: ['name'],
-      additionalProperties: false
+      additionalProperties: false,
     };
 
     // Add schema properties
     jsonSchema.properties.name = {
       type: 'string',
-      description: 'Schema name'
+      description: 'Schema name',
     };
-    
+
     jsonSchema.properties.description = {
       type: 'string',
-      description: 'Schema description'
+      description: 'Schema description',
     };
 
     // Add field properties
@@ -95,7 +95,7 @@ export class SchemaGenerator {
     for (const field of schema.fields) {
       const fieldSchema: any = {
         type: field.type,
-        description: field.description || `Field: ${field.name}`
+        description: field.description || `Field: ${field.name}`,
       };
 
       // Add constraints based on type
@@ -127,7 +127,7 @@ export class SchemaGenerator {
       type: 'object',
       properties: fieldProperties,
       required: requiredFields,
-      additionalProperties: false
+      additionalProperties: false,
     };
 
     // Add connections
@@ -140,10 +140,10 @@ export class SchemaGenerator {
             id: { type: 'string' },
             sourceFieldId: { type: 'string' },
             targetFieldId: { type: 'string' },
-            type: { type: 'string', enum: ['one-to-one', 'one-to-many'] }
+            type: { type: 'string', enum: ['one-to-one', 'one-to-many'] },
           },
-          required: ['id', 'sourceFieldId', 'targetFieldId', 'type']
-        }
+          required: ['id', 'sourceFieldId', 'targetFieldId', 'type'],
+        },
       };
     }
 
@@ -156,10 +156,10 @@ export class SchemaGenerator {
           properties: {
             type: { type: 'string', enum: ['bounds', 'uniqueness', 'differential_privacy'] },
             fieldId: { type: 'string' },
-            parameters: { type: 'object' }
+            parameters: { type: 'object' },
           },
-          required: ['type', 'fieldId', 'parameters']
-        }
+          required: ['type', 'fieldId', 'parameters'],
+        },
       };
     }
 
@@ -171,8 +171,8 @@ export class SchemaGenerator {
         updatedAt: { type: 'string', format: 'date-time' },
         version: { type: 'string' },
         lastTested: { type: 'string', format: 'date-time' },
-        testResults: { type: 'array' }
-      }
+        testResults: { type: 'array' },
+      },
     };
 
     return JSON.stringify(jsonSchema, null, 2);
@@ -182,20 +182,20 @@ export class SchemaGenerator {
    * Generate Rust-compatible schema output
    */
   static generateRustSchema(schema: SchemaConfig): RustSchemaOutput {
-    const rustFields: RustField[] = schema.fields.map(field => ({
+    const rustFields: RustField[] = schema.fields.map((field) => ({
       id: field.id,
       name: field.name,
       field_type: this.mapFieldType(field),
       description: field.description,
       constraints: this.mapFieldConstraints(field),
-      required: field.required
+      required: field.required,
     }));
 
-    const rustConstraints: RustConstraint[] = schema.constraints.map(constraint => ({
+    const rustConstraints: RustConstraint[] = schema.constraints.map((constraint) => ({
       id: constraint.id,
       constraint_type: this.mapConstraintType(constraint),
       field_id: constraint.fieldId,
-      parameters: this.mapConstraintParameters(constraint)
+      parameters: this.mapConstraintParameters(constraint),
     }));
 
     const rustMetadata: RustMetadata = {
@@ -203,12 +203,13 @@ export class SchemaGenerator {
       updated_at: schema.metadata.updatedAt.toISOString(),
       version: schema.metadata.version,
       last_tested: schema.metadata.lastTested?.toISOString(),
-      test_results: schema.metadata.testResults?.map(test => ({
-        success: test.success,
-        timestamp: test.timestamp,
-        errors: test.errors,
-        warnings: test.warnings
-      })) || []
+      test_results:
+        schema.metadata.testResults?.map((test) => ({
+          success: test.success,
+          timestamp: test.timestamp,
+          errors: test.errors,
+          warnings: test.warnings,
+        })) || [],
     };
 
     return {
@@ -216,7 +217,7 @@ export class SchemaGenerator {
       description: schema.description,
       fields: rustFields,
       constraints: rustConstraints,
-      metadata: rustMetadata
+      metadata: rustMetadata,
     };
   }
 
@@ -225,7 +226,7 @@ export class SchemaGenerator {
    */
   static generateRustStruct(schema: SchemaConfig): string {
     const rustSchema = this.generateRustSchema(schema);
-    
+
     let rustCode = `// Auto-generated Rust schema for ZK proofs
 // Generated on: ${new Date().toISOString()}
 // Schema: ${schema.name}
@@ -459,7 +460,7 @@ fn main() {
    */
   static generateRustTests(schema: SchemaConfig): string {
     const rustSchema = this.generateRustSchema(schema);
-    
+
     return `// Auto-generated Rust tests for ZK schema validation
 // Generated on: ${new Date().toISOString()}
 // Schema: ${schema.name}
@@ -479,17 +480,19 @@ mod tests {
     fn test_valid_data() {
         let schema = create_test_schema();
         let valid_data = json!({
-            ${schema.fields.map(field => {
-              if (field.type === 'string') {
-                `"${field.name}": "test_value"`
-              } else if (field.type === 'integer') {
-                `"${field.name}": ${field.constraints.min || 0}`
-              } else if (field.type === 'boolean') {
-                `"${field.name}": true`
-              } else {
-                `"${field.name}": "${field.constraints.enumValues?.[0] || 'test'}"`
-              }
-            }).join(',\n            ')}
+            ${schema.fields
+              .map((field) => {
+                if (field.type === 'string') {
+                  `"${field.name}": "test_value"`;
+                } else if (field.type === 'integer') {
+                  `"${field.name}": ${field.constraints.min || 0}`;
+                } else if (field.type === 'boolean') {
+                  `"${field.name}": true`;
+                } else {
+                  `"${field.name}": "${field.constraints.enumValues?.[0] || 'test'}"`;
+                }
+              })
+              .join(',\n            ')}
         });
 
         let data_map: HashMap<String, serde_json::Value> = serde_json::from_value(valid_data)
@@ -509,17 +512,19 @@ mod tests {
     fn test_invalid_data_types() {
         let schema = create_test_schema();
         let invalid_data = json!({
-            ${schema.fields.map(field => {
-              if (field.type === 'string') {
-                `"${field.name}": 123`
-              } else if (field.type === 'integer') {
-                `"${field.name}": "invalid_string"`
-              } else if (field.type === 'boolean') {
-                `"${field.name}": "invalid_boolean"`
-              } else {
-                `"${field.name}": 123`
-              }
-            }).join(',\n            ')}
+            ${schema.fields
+              .map((field) => {
+                if (field.type === 'string') {
+                  `"${field.name}": 123`;
+                } else if (field.type === 'integer') {
+                  `"${field.name}": "invalid_string"`;
+                } else if (field.type === 'boolean') {
+                  `"${field.name}": "invalid_boolean"`;
+                } else {
+                  `"${field.name}": 123`;
+                }
+              })
+              .join(',\n            ')}
         });
 
         let data_map: HashMap<String, serde_json::Value> = serde_json::from_value(invalid_data)
@@ -532,21 +537,31 @@ mod tests {
             Err(errors) => {
                 assert!(errors.len() > 0, "Expected validation errors");
                 // Check that we have type errors for each field
-                ${schema.fields.map(field => {
-                  `assert!(errors.iter().any(|e| e.contains("${field.name}")), "Missing error for field ${field.name}");`
-                }).join('\n                ')}
+                ${schema.fields
+                  .map((field) => {
+                    `assert!(errors.iter().any(|e| e.contains("${field.name}")), "Missing error for field ${field.name}");`;
+                  })
+                  .join('\n                ')}
             }
         }
     }
 
-    ${schema.fields.filter(field => field.type === 'integer' && (field.constraints.min !== undefined || field.constraints.max !== undefined)).map(field => {
-      return `
+    ${schema.fields
+      .filter(
+        (field) =>
+          field.type === 'integer' &&
+          (field.constraints.min !== undefined || field.constraints.max !== undefined)
+      )
+      .map((field) => {
+        return `
     #[test]
     fn test_${field.name}_bounds() {
         let schema = create_test_schema();
         
         // Test minimum value
-        ${field.constraints.min !== undefined ? `
+        ${
+          field.constraints.min !== undefined
+            ? `
         let below_min = json!({
             "${field.name}": ${field.constraints.min! - 1}
         });
@@ -557,10 +572,14 @@ mod tests {
             Err(errors) => {
                 assert!(errors.iter().any(|e| e.contains("below minimum")), "Expected minimum bound error");
             }
-        }` : ''}
+        }`
+            : ''
+        }
         
         // Test maximum value
-        ${field.constraints.max !== undefined ? `
+        ${
+          field.constraints.max !== undefined
+            ? `
         let above_max = json!({
             "${field.name}": ${field.constraints.max! + 1}
         });
@@ -571,7 +590,9 @@ mod tests {
             Err(errors) => {
                 assert!(errors.iter().any(|e| e.contains("above maximum")), "Expected maximum bound error");
             }
-        }` : ''}
+        }`
+            : ''
+        }
         
         // Test valid range
         let valid_value = json!({
@@ -588,7 +609,8 @@ mod tests {
             }
         }
     }`;
-    }).join('\n\n')}
+      })
+      .join('\n\n')}
 
     #[test]
     fn test_required_fields() {
@@ -603,9 +625,12 @@ mod tests {
                 panic!("Should have failed due to missing required fields");
             },
             Err(errors) => {
-                ${schema.fields.filter(field => field.required).map(field => {
-                  `assert!(errors.iter().any(|e| e.contains("${field.name}")), "Missing error for required field ${field.name}");`
-                }).join('\n                ')}
+                ${schema.fields
+                  .filter((field) => field.required)
+                  .map((field) => {
+                    `assert!(errors.iter().any(|e| e.contains("${field.name}")), "Missing error for required field ${field.name}");`;
+                  })
+                  .join('\n                ')}
             }
         }
     }
@@ -615,17 +640,19 @@ mod tests {
         let schema = create_test_schema();
         let data_with_unknown = json!({
             "unknown_field": "value",
-            ${schema.fields.map(field => {
-              if (field.type === 'string') {
-                `"${field.name}": "test_value"`
-              } else if (field.type === 'integer') {
-                `"${field.name}": 0`
-              } else if (field.type === 'boolean') {
-                `"${field.name}": true`
-              } else {
-                `"${field.name}": "test"`
-              }
-            }).join(',\n            ')}
+            ${schema.fields
+              .map((field) => {
+                if (field.type === 'string') {
+                  `"${field.name}": "test_value"`;
+                } else if (field.type === 'integer') {
+                  `"${field.name}": 0`;
+                } else if (field.type === 'boolean') {
+                  `"${field.name}": true`;
+                } else {
+                  `"${field.name}": "test"`;
+                }
+              })
+              .join(',\n            ')}
         });
 
         let data_map: HashMap<String, serde_json::Value> = serde_json::from_value(data_with_unknown)
@@ -730,7 +757,7 @@ fn main() {
 }
       `,
       'tests/integration_tests.rs': this.generateRustTests(schema),
-      'README.md`: `
+      'README.md': `
 # ${schema.name} ZK Schema Validator
 
 Zero-knowledge schema validation for ${schema.description || 'data privacy applications'}.
@@ -785,7 +812,7 @@ cargo test
 ## License
 
 MIT
-      `
+      `,
     };
   }
 
@@ -799,9 +826,9 @@ MIT
       case 'boolean':
         return { type: 'Boolean' };
       case 'enum':
-        return { 
-          type: 'Enum', 
-          enum_values: field.constraints.enumValues || [] 
+        return {
+          type: 'Enum',
+          enum_values: field.constraints.enumValues || [],
         };
       default:
         return { type: 'String' };
@@ -810,7 +837,7 @@ MIT
 
   private static mapFieldConstraints(field: SchemaField): RustFieldConstraints {
     const constraints: RustFieldConstraints = {};
-    
+
     if (field.type === 'integer') {
       if (field.constraints.min !== undefined) {
         constraints.min_value = field.constraints.min;
@@ -819,15 +846,15 @@ MIT
         constraints.max_value = field.constraints.max;
       }
     }
-    
+
     if (field.type === 'string' && field.constraints.pattern) {
       constraints.pattern = field.constraints.pattern;
     }
-    
+
     if (field.type === 'enum' && field.constraints.enumValues) {
       constraints.enum_values = field.constraints.enumValues;
     }
-    
+
     return constraints;
   }
 
@@ -846,7 +873,7 @@ MIT
 
   private static mapConstraintParameters(constraint: ZKConstraint): RustConstraintParameters {
     const parameters: RustConstraintParameters = {};
-    
+
     if (constraint.parameters.min !== undefined) {
       parameters.min_value = constraint.parameters.min;
     }
@@ -865,7 +892,7 @@ MIT
     if (constraint.parameters.noiseScale !== undefined) {
       parameters.noise_scale = constraint.parameters.noiseScale;
     }
-    
+
     return parameters;
   }
 }

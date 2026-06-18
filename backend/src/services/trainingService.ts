@@ -323,10 +323,10 @@ function initializeDefaultModules() {
             type: 'multiple_choice',
             question: 'What is the primary purpose of GDPR?',
             options: [
-              { id: 'a', text: 'To protect businesses from data breaches' },
-              { id: 'b', text: 'To give individuals control over their personal data' },
-              { id: 'c', text: 'To create a unified market for data sales' },
-              { id: 'd', text: 'To eliminate cross-border data transfers' }
+              { id: 'a', text: 'To protect businesses from data breaches', isCorrect: false },
+              { id: 'b', text: 'To give individuals control over their personal data', isCorrect: true },
+              { id: 'c', text: 'To create a unified market for data sales', isCorrect: false },
+              { id: 'd', text: 'To eliminate cross-border data transfers', isCorrect: false }
             ],
             correctAnswer: 'b',
             explanation: 'GDPR aims to give individuals control over their personal data and simplify the regulatory environment for international business.',
@@ -488,10 +488,10 @@ function privateAverage(data, epsilon) {
             type: 'multiple_choice',
             question: 'What happens to privacy guarantees when epsilon decreases?',
             options: [
-              { id: 'a', text: 'Privacy increases, utility decreases' },
-              { id: 'b', text: 'Privacy decreases, utility increases' },
-              { id: 'c', text: 'Both privacy and utility increase' },
-              { id: 'd', text: 'Both privacy and utility decrease' }
+              { id: 'a', text: 'Privacy increases, utility decreases', isCorrect: true },
+              { id: 'b', text: 'Privacy decreases, utility increases', isCorrect: false },
+              { id: 'c', text: 'Both privacy and utility increase', isCorrect: false },
+              { id: 'd', text: 'Both privacy and utility decrease', isCorrect: false }
             ],
             correctAnswer: 'a',
             explanation: 'Lower epsilon means stronger privacy guarantees but more noise, reducing utility.',
@@ -656,8 +656,8 @@ function privateAverage(data, epsilon) {
             type: 'multiple_choice',
             question: 'What is the minimum retention period for GDPR compliance records?',
             options: [
-              { id: 'a', text: '1 year' },
-              { id: 'b', text: '3 years' },
+              { id: 'a', text: '1 year', isCorrect: false },
+              { id: 'b', text: '3 years', isCorrect: false },
               { id: 'c', text: '5 years' },
               { id: 'd', text: 'Depends on the data type and purpose' }
             ],

@@ -170,7 +170,7 @@ export class DatabasePerformanceService {
     this.queryCache.set(cacheKey, cacheEntry);
     
     // Also store in Redis for distributed caching
-    await this.redis.setex(cacheKey, Math.ceil(ttl / 1000), JSON.stringify(result));
+    await this.redis.setEx(cacheKey, Math.ceil(ttl / 1000), JSON.stringify(result));
     
     logger.debug(`Cached query with key: ${cacheKey}`);
   }

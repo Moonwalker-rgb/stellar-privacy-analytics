@@ -65,20 +65,20 @@ export class MockPaymentService {
     };
 
     // Store in Redis
-    await this.redisClient.setex(
+    await this.redisClient.setEx(
       `sandbox:payment:${paymentId}`,
       86400 * 7, // 7 days
       JSON.stringify(payment)
     );
 
     // Add to subscription payment history
-    await this.redisClient.lpush(
+    await this.redisClient.lPush(
       `sandbox:subscription:${data.subscriptionId}:payments`,
       JSON.stringify(payment)
     );
 
     // Trim payment history to last 100 payments
-    await this.redisClient.ltrim(`sandbox:subscription:${data.subscriptionId}:payments`, 0, 99);
+    await this.redisClient.lTrim(`sandbox:subscription:${data.subscriptionId}:payments`, 0, 99);
 
     // Emit to internal indexer (simulate SubscriptionBilled event)
     await this.emitSubscriptionBilledEvent(payment);
@@ -105,7 +105,7 @@ export class MockPaymentService {
     
     if (subscriptionId) {
       // Get payments for specific subscription
-      const paymentData = await this.redisClient.lrange(
+      const paymentData = await this.redisClient.lRange(
         `sandbox:subscription:${subscriptionId}:payments`,
         offset,
         offset + limit - 1
@@ -123,7 +123,7 @@ export class MockPaymentService {
       const paginatedKeys = paymentKeys.slice(startIndex, endIndex + 1);
       
       if (paginatedKeys.length > 0) {
-        const paymentData = await this.redisClient.mget(...paginatedKeys);
+        const paymentData = await this.redisClient.mGet(...paginatedKeys);
         payments = paymentData
           .filter(payment => payment !== null)
           .map(payment => JSON.parse(payment))
@@ -132,7 +132,7 @@ export class MockPaymentService {
     }
 
     const totalCount = subscriptionId 
-      ? await this.redisClient.llen(`sandbox:subscription:${subscriptionId}:payments`)
+      ? await this.redisClient.lLen(`sandbox:subscription:${subscriptionId}:payments`)
       : (await this.redisClient.keys('sandbox:payment:*')).length;
 
     return {
@@ -158,14 +158,14 @@ export class MockPaymentService {
     payment.timestamp = new Date().toISOString();
 
     // Update in Redis
-    await this.redisClient.setex(
+    await this.redisClient.setEx(
       `sandbox:payment:${paymentId}`,
       86400 * 7,
       JSON.stringify(payment)
     );
 
     // Update in subscription history
-    const subscriptionPayments = await this.redisClient.lrange(
+    const subscriptionPayments = await this.redisClient.lRange(
       `sandbox:subscription:${payment.subscriptionId}:payments`,
       0,
       -1
@@ -175,7 +175,7 @@ export class MockPaymentService {
     for (let i = 0; i < subscriptionPayments.length; i++) {
       const paymentData = JSON.parse(subscriptionPayments[i]);
       if (paymentData.paymentId === paymentId) {
-        await this.redisClient.lset(
+        await this.redisClient.lSet(
           `sandbox:subscription:${payment.subscriptionId}:payments`,
           i,
           JSON.stringify(payment)
@@ -195,7 +195,7 @@ export class MockPaymentService {
         payment.timestamp = new Date().toISOString();
         
         // Update with failure type
-        this.redisClient.setex(
+        this.redisClient.setEx(
           `sandbox:payment:${paymentId}`,
           86400 * 7,
           JSON.stringify(payment)
@@ -255,7 +255,7 @@ export class MockPaymentService {
       };
 
       // Store in indexer events queue
-      await this.redisClient.lpush('sandbox:indexer:events', JSON.stringify({
+      await this.redisClient.lPush('sandbox:indexer:events', JSON.stringify({
         eventType: 'SubscriptionBilled',
         data: billedEvent,
         timestamp: new Date().toISOString(),
@@ -264,7 +264,7 @@ export class MockPaymentService {
       }));
 
       // Trim events queue
-      await this.redisClient.ltrim('sandbox:indexer:events', 0, 999);
+      await this.redisClient.lTrim('sandbox:indexer:events', 0, 999);
 
       logger.debug('Subscription billed event emitted from mock payment', { 
         paymentId: payment.paymentId,

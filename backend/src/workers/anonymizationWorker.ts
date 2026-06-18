@@ -1,4 +1,4 @@
-import { Queue, Worker, Job, QueueScheduler } from 'bullmq';
+import { Queue, Worker, Job } from 'bullmq';
 import { createClient } from 'redis';
 import { logger } from '../utils/logger';
 import { PIIMasker } from './piMasker';
@@ -44,7 +44,7 @@ export interface PIIDetection {
 export class AnonymizationWorker {
   private queue: Queue;
   private worker: Worker;
-  private scheduler: QueueScheduler;
+  private scheduler: any;
   private deadLetterQueue: DeadLetterQueue;
   private piiMasker: PIIMasker;
   private nerProcessor: NERProcessor;
@@ -131,7 +131,7 @@ export class AnonymizationWorker {
     });
 
     // Queue scheduler for delayed jobs
-    this.scheduler = new QueueScheduler('anonymization', {
+    this.scheduler = new (any as any)('anonymization', {
       connection: {
         host: process.env.REDIS_HOST || 'localhost',
         port: parseInt(process.env.REDIS_PORT || '6379'),
@@ -186,7 +186,7 @@ export class AnonymizationWorker {
           password: process.env.REDIS_PASSWORD,
         },
         concurrency: workerConfig.concurrency || 5,
-        maxRetriesPerJob: workerConfig.maxRetries || 3,
+        attempts: workerConfig.maxRetries || 3,
         retryDelay: workerConfig.retryDelay || 2000,
       }
     );

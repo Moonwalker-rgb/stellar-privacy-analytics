@@ -336,13 +336,12 @@ router.get('/audit/integrity', async (req: Request, res: Response) => {
       data: integrity
     });
   } catch (error: any) {
-    logger.error('Failed to verify audit integrity:', error);
-    res.status(500).json({
-      error: 'Failed to verify audit integrity',
-      message: error.message
-    });
-  }
-);
+    logger.error('Failed to verify audit integrity:', error);      res.status(500).json({
+        error: 'Failed to verify audit integrity',
+        message: error.message
+      });
+    }
+  });
 
 // Export audit log (CSV/JSON)
 router.get('/audit/export',
@@ -435,13 +434,12 @@ router.get('/master-key/status', async (req: Request, res: Response) => {
       data: status
     });
   } catch (error: any) {
-    logger.error('Failed to get master key status:', error);
-    res.status(500).json({
-      error: 'Failed to get master key status',
-      message: error.message
-    });
-  }
-);
+    logger.error('Failed to get master key status:', error);      res.status(500).json({
+        error: 'Failed to get master key status',
+        message: error.message
+      });
+    }
+  });
 
 // List all master keys
 router.get('/master-keys', async (req: Request, res: Response) => {
@@ -455,13 +453,12 @@ router.get('/master-keys', async (req: Request, res: Response) => {
       data: keys
     });
   } catch (error: any) {
-    logger.error('Failed to list master keys:', error);
-    res.status(500).json({
-      error: 'Failed to list master keys',
-      message: error.message
-    });
-  }
-);
+    logger.error('Failed to list master keys:', error);      res.status(500).json({
+        error: 'Failed to list master keys',
+        message: error.message
+      });
+    }
+  });
 
 // Clear data key cache
 router.post('/cache/clear', async (req: Request, res: Response) => {
@@ -481,12 +478,11 @@ router.post('/cache/clear', async (req: Request, res: Response) => {
       message: 'Data key cache cleared'
     });
   } catch (error: any) {
-    logger.error('Failed to clear cache:', error);
-    res.status(500).json({
-      error: 'Failed to clear cache',
-      message: error.message
-    });
-  }
-);
+    logger.error('Failed to clear cache:', error);      res.status(500).json({
+        error: 'Failed to clear cache',
+        message: error.message
+      });
+    }
+  });
 
 export default router;
