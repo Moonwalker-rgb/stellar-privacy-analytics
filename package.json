@@ -31,10 +31,15 @@
     "type-check:frontend": "cd frontend && npm run type-check",
     "type-check:contracts": "cd contracts && npm run type-check",
     "format:check": "npx prettier --check \"**/*.{ts,tsx,css,json}\" --ignore-path .gitignore",
+    "format:check:shared": "cd shared && npm run format:check",
+    "format:check:contracts": "cd contracts && npm run format:check",
+    "format:check:frontend": "cd frontend && npm run format:check",
+    "format:check:backend": "cd backend && npm run format:check",
     "docker:build": "docker-compose build",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "setup": "npm install && npm install --prefix shared && npm install --prefix backend && npm install --prefix frontend && npm install --prefix contracts && npm install --prefix docs && npm install --prefix service-discovery-dashboard"
+    "setup": "npm install && npm install --prefix shared && npm install --prefix backend && npm install --prefix frontend && npm install --prefix contracts && npm install --prefix docs && npm install --prefix service-discovery-dashboard",
+    "setup:ci": "npm ci && npm ci --prefix shared && npm ci --prefix backend && npm ci --prefix frontend && npm ci --prefix contracts && npm ci --prefix docs && npm ci --prefix service-discovery-dashboard"
   },
   "keywords": [
     "privacy",

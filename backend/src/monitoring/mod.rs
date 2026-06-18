@@ -1,4 +1,8 @@
-use crate::monitoring::{config::MonitoringConfig, prometheus_exporter::{MetricsCollector, create_metrics_route, create_authenticated_metrics_route}};
+pub mod config;
+pub mod prometheus_exporter;
+
+use self::config::MonitoringConfig;
+use self::prometheus_exporter::{MetricsCollector, create_metrics_route, create_authenticated_metrics_route};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use warp::Filter;
@@ -45,7 +49,7 @@ impl MonitoringService {
             .and(warp::get())
             .and(warp::any().map(move || self.collector.clone()))
             .and_then(|collector: MetricsCollector| async move {
-                crate::monitoring::prometheus_exporter::health_check(&collector).await
+                self::prometheus_exporter::health_check(&collector).await
             });
 
         let metrics_route = if self.config.prometheus.enable_auth {
@@ -204,7 +208,7 @@ impl MetricsAggregator {
         }
 
         // Update gauge metrics
-        crate::monitoring::prometheus_exporter::get_metrics().smpc_sessions_active
+        self::prometheus_exporter::get_metrics().smpc_sessions_active
             .with_label_values(&["all", "all"])
             .set(active_sessions as f64);
     }

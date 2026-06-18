@@ -7,7 +7,12 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "serve -s dist -l 3000"
+    "start": "serve -s dist -l 3000",
+    "lint": "echo 'No linter configured'",
+    "type-check": "echo 'No type-check configured'",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,json,html}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json,html}\"",
+    "test": "echo 'No tests configured'"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -26,7 +31,8 @@
     "vite": "^4.3.0",
     "autoprefixer": "^10.4.14",
     "postcss": "^8.4.23",
-    "serve": "^14.2.0"
+    "serve": "^14.2.0",
+    "prettier": "^3.1.0"
   },
   "keywords": [
     "service-discovery",
