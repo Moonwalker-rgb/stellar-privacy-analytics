@@ -255,9 +255,6 @@ impl StellarAnalytics {
             return Err(StellarAnalyticsError::InsufficientPrivacyBudget);
         }
 
-        // Clone dataset_hash before moving into request
-        let dataset_hash_for_reg = dataset_hash.clone();
-
         // Create analysis request
         let request = AnalysisRequest {
             request_id: request_id.clone(),
@@ -694,6 +691,7 @@ impl StellarAnalytics {
             return Err(StellarAnalyticsError::VersionMismatch);
         }
 
+        let dataset_hash_for_event = dataset_hash.clone();
         let dataset = IPFSDataset {
             cid: cid.clone(),
             dataset_hash,
@@ -740,7 +738,7 @@ impl StellarAnalytics {
         // Emit event
         env.events().publish(
             (Symbol::new(&env, "dataset_registered"), uploader),
-            (cid, dataset_hash.clone(), size_bytes),
+            (cid, dataset_hash_for_event, size_bytes),
         );
 
         Ok(())
