@@ -1,7 +1,16 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["src/gateway/**/*.ts"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/__tests__/**"],
+  "include": ["src/**/*"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "src/compliance/**/*",
+    "src/exports/**/*",
+    "src/search-index/**/*",
+    "src/theme/**/*"
+  ],
   "compilerOptions": {
     "strict": false,
     "noImplicitAny": false,

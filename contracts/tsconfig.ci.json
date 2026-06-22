@@ -9,5 +9,5 @@
     "noFallthroughCasesInSwitch": false,
     "skipLibCheck": true
   },
-  "exclude": ["node_modules", "dist", "test/**/*.ts", "scripts/deploy.ts"]
+  "exclude": ["node_modules", "dist", "test/**/*.ts"]
 }
