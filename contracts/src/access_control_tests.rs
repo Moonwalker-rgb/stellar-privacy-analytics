@@ -1,11 +1,11 @@
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::access_control::PermissionType;
     use soroban_sdk::{
         testutils::{Address as TestAddress, BytesN as TestBytesN},
         Address, Env, Symbol, Vec,
     };
-    use crate::access_control::PermissionType;
 
     #[test]
     fn test_initialize() {

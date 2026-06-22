@@ -81,8 +81,7 @@ impl MultiSigAdmin {
         }
 
         // Validate threshold
-        if threshold < MIN_THRESHOLD || threshold > MAX_THRESHOLD || threshold > owners.len()
-        {
+        if threshold < MIN_THRESHOLD || threshold > MAX_THRESHOLD || threshold > owners.len() {
             return Err(MultiSigError::InvalidThreshold);
         }
 
