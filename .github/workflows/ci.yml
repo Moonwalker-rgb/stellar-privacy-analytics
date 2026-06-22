@@ -30,7 +30,6 @@ jobs:
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
       backend: ${{ steps.filter.outputs.backend }}
-      contracts: ${{ steps.filter.outputs.contracts }}
       shared: ${{ steps.filter.outputs.shared }}
       service-discovery: ${{ steps.filter.outputs.service-discovery }}
       docs: ${{ steps.filter.outputs.docs }}
@@ -52,8 +51,6 @@ jobs:
             shared:
               - 'shared/**'
               - 'package.json'
-            contracts:
-              - 'contracts/**'
             service-discovery:
               - 'service-discovery-dashboard/**'
             rust-root:
@@ -164,42 +161,6 @@ jobs:
       - run: npm test
       - run: npm run build
 
-  # ── Smart Contracts (Rust/Soroban) ────────────────────────
-  contracts:
-    name: Smart Contracts
-    needs: [changes]
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: contracts
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-          components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: contracts
-          cache-on-failure: true
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: contracts/package-lock.json
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run type-check
-      - name: Format check (cargo fmt)
-        run: cargo fmt --check
-      - name: Clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
-      - name: Test (Rust)
-        run: cargo test
-      - name: Build WASM (release)
-        run: cargo build --target wasm32-unknown-unknown --release
-
   # ── Root Soroban Extras ──────────────────────────────────
   rust-extras:
     name: Rust Extras
@@ -269,7 +230,7 @@ jobs:
   # ── Deploy ───────────────────────────────────────────────
   deploy:
     name: Deploy
-    needs: [frontend, backend, contracts, rust-extras, service-discovery, docs]
+    needs: [frontend, backend, rust-extras, service-discovery, docs]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
