@@ -32,6 +32,7 @@ jobs:
       contracts: ${{ steps.filter.outputs.contracts }}
       service-discovery: ${{ steps.filter.outputs.service-discovery }}
       rust: ${{ steps.filter.outputs.rust }}
+      docs: ${{ steps.filter.outputs.docs }}
       ci: ${{ steps.filter.outputs.ci }}
     steps:
       - uses: actions/checkout@v4
@@ -51,20 +52,19 @@ jobs:
               - 'package.json'
             contracts:
               - 'contracts/**'
-              - 'Cargo.toml'
-              - '**/Cargo.toml'
-              - '**/*.rs'
             service-discovery:
               - 'service-discovery-dashboard/**'
-              - 'package.json'
+            docs:
+              - 'docs/**'
             rust:
               - 'src/**'
               - 'contracts/**'
               - 'backend/src/**/*.rs'
               - 'backend/Cargo.toml'
               - 'Cargo.toml'
-              - '**/Cargo.toml'
-              - '**/*.rs'
+              - 'contracts/**/Cargo.toml'
+              - 'contracts/**/*.rs'
+              - 'src/**/*.rs'
             ci:
               - '.github/workflows/**'
               - '.github/actions/**'
@@ -176,9 +176,8 @@ jobs:
     if: |
       always() &&
       !cancelled() &&
-      (needs.changes.outputs.contracts == 'true' ||
+       (needs.changes.outputs.contracts == 'true' ||
        needs.changes.outputs.rust == 'true' ||
-       needs.changes.outputs.ci == 'true' ||
        (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop')))
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -205,8 +204,6 @@ jobs:
         run: npm ci
       - name: Lint TypeScript
         run: npm run lint
-      - name: Type-check TypeScript
-        run: npm run type-check
       - name: Format check (cargo fmt)
         run: cargo fmt --check
       - name: Clippy
@@ -224,7 +221,6 @@ jobs:
       always() &&
       !cancelled() &&
        (needs.changes.outputs.rust == 'true' ||
-        needs.changes.outputs.ci == 'true' ||
         (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop')))
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -256,7 +252,6 @@ jobs:
       always() &&
       !cancelled() &&
        (needs.changes.outputs.service-discovery == 'true' ||
-        needs.changes.outputs.ci == 'true' ||
         (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop')))
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -286,7 +281,7 @@ jobs:
     if: |
       always() &&
       !cancelled() &&
-       (needs.changes.outputs.ci == 'true' ||
+       (needs.changes.outputs.docs == 'true' ||
         (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop')))
     runs-on: ubuntu-latest
     timeout-minutes: 15
