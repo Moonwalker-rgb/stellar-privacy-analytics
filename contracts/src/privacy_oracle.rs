@@ -11,15 +11,6 @@ use soroban_sdk::String;
 use soroban_sdk::Symbol;
 use soroban_sdk::Vec;
 
-// Contract state storage keys
-const DATA_REQUESTS_KEY: &str = "DATA_REQUESTS";
-const DATA_RESPONSES_KEY: &str = "DATA_RESPONSES";
-const ORACLE_NODES_KEY: &str = "ORACLE_NODES";
-const DATA_SOURCE_FEES_KEY: &str = "DATA_SOURCE_FEES";
-const USER_DEPOSITS_KEY: &str = "USER_DEPOSITS";
-const PENDING_REQUESTS_KEY: &str = "PENDING_REQUESTS";
-const ACTIVE_ORACLE_NODES_KEY: &str = "ACTIVE_ORACLE_NODES";
-
 // Constants
 const MIN_FEE: i128 = 10000000; // 0.01 XLM (10^7 stroops)
 const MAX_FEE: i128 = 1000000000; // 1 XLM (10^9 stroops)
