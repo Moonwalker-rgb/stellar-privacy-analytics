@@ -22,6 +22,7 @@ use super::upgradeable_proxy::{
     ProxyError, UpgradeableProxy, UpgradeableProxyClient, MIN_UPGRADE_DELAY,
 };
 use soroban_sdk::testutils::Address as _;
+use soroban_sdk::testutils::Ledger;
 use soroban_sdk::{Address, BytesN, Env};
 
 fn new_env() -> Env {
@@ -283,7 +284,7 @@ fn transfer_admin_old_admin_loses_power_new_admin_gains_it() {
 
     // New admin can now initiate an upgrade.
     let new_attempt = client.try_initiate_upgrade(&new_impl, &new_admin);
-    assert_eq!(new_attempt, Ok(()));
+    assert_eq!(new_attempt, Ok(Ok(())));
     assert!(client.pending_upgrade().is_some());
 }
 
@@ -344,6 +345,6 @@ fn view_functions_reject_uninitialized_contract() {
     assert_eq!(client.try_admin(), Err(Ok(ProxyError::NotInitialized)));
     // upgrade_delay has a default fallback so it must succeed even pre-init.
     assert!(client.upgrade_delay() >= MIN_UPGRADE_DELAY);
-    // pending_upgrade returns Ok(None) when there is nothing pending.
-    assert_eq!(client.pending_upgrade(), Ok(None));
+    // pending_upgrade returns None when there is nothing pending.
+    assert_eq!(client.pending_upgrade(), None);
 }
