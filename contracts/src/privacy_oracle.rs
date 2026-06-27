@@ -503,6 +503,12 @@ impl PrivacyOracle {
     }
 
     /// Withdraw deposit
+    ///
+    /// NOTE: In production, this function should also transfer XLM back
+    /// to the user via the Stellar token contract (`token::Client::transfer`).
+    /// The current implementation updates the internal deposit ledger only;
+    /// a future upgrade should integrate with the Soroban token interface to
+    /// perform actual on-chain value transfers.
     pub fn withdraw(env: Env, amount: i128) -> Result<(), PrivacyOracleError> {
         let user = env.current_contract_address(); // In real implementation, get from auth
 
@@ -520,6 +526,47 @@ impl PrivacyOracle {
         // Emit event
         env.events()
             .publish((Symbol::new(&env, "withdrawn"), user), ());
+
+        Ok(())
+    }
+
+    /// Withdraw accumulated fees to the admin wallet (admin only).
+    ///
+    /// NOTE: In production, this function should transfer XLM via
+    /// the Stellar token contract. Currently it only tracks the
+    /// withdrawal in the internal ledger for audit purposes.
+    pub fn withdraw_fees(
+        env: Env,
+        amount: i128,
+        admin: Address,
+    ) -> Result<(), PrivacyOracleError> {
+        admin.require_auth();
+
+        let stored_admin: Address = env
+            .storage()
+            .instance()
+            .get(&Symbol::new(&env, "admin"))
+            .ok_or(PrivacyOracleError::Unauthorized)?;
+        if admin != stored_admin {
+            return Err(PrivacyOracleError::Unauthorized);
+        }
+
+        let total_fees: i128 = env
+            .storage()
+            .instance()
+            .get(&Symbol::new(&env, "total_fees_collected"))
+            .unwrap_or(0);
+        if amount > total_fees {
+            return Err(PrivacyOracleError::InvalidFee);
+        }
+
+        env.storage().instance().set(
+            &Symbol::new(&env, "total_fees_collected"),
+            &(total_fees - amount),
+        );
+
+        env.events()
+            .publish((Symbol::new(&env, "fees_withdrawn"), admin), (amount,));
 
         Ok(())
     }

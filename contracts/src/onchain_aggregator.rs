@@ -229,7 +229,10 @@ impl OnChainAggregator {
         request.status = String::from_str(&env, "processing");
         env.storage().persistent().set(&request_id, &request);
 
-        // Collect encrypted data points
+        // Collect encrypted data points with TOCTOU-safe validation.
+        // Each data point is checked for existence at processing time
+        // (not just at submission), preventing a race where points are
+        // deleted between submit_aggregation_request and process_aggregation.
         let mut encrypted_values = Vec::new(&env);
         let mut total_epsilon_spent = 0i128;
         let mut participants_count = 0u32;
@@ -240,6 +243,17 @@ impl OnChainAggregator {
                 total_epsilon_spent += data_point.epsilon_spent;
                 participants_count += 1;
             }
+            // Gracefully skip data points that were deleted between
+            // submission and processing (TOCTOU hardening).
+        }
+
+        // Require at least one valid data point to avoid division-by-zero
+        // and meaningless results.
+        if participants_count == 0 {
+            // Revert to pending so the request can be retried.
+            request.status = String::from_str(&env, "pending");
+            env.storage().persistent().set(&request_id, &request);
+            return Err(AggregatorError::DataPointNotFound);
         }
 
         // Perform aggregation based on operation

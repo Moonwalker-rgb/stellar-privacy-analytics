@@ -24,10 +24,28 @@ pub struct FixedPointMath;
 
 impl FixedPointMath {
     pub const SCALE: i128 = 10_000;
+    /// Sentinel value returned when the Taylor series would diverge
+    /// (x >= SCALE in ln(1-x)). Large enough to saturate gracefully
+    /// through the downstream `saturating_mul` chain.
+    const LN_DIVERGENCE_SENTINEL: i128 = -1_000_000;
 
     /// Approximates ln(1 - x) using Taylor series for x in [0, 1)
     /// x is expected to be scaled by SCALE.
+    /// Returns 0 for x == 0, and saturates for x >= SCALE to prevent divergence.
     pub fn ln_1_minus_x(x: i128) -> i128 {
+        // Guard: ln(1 - 0) = 0
+        if x <= 0 {
+            return 0;
+        }
+        // Guard: x must be strictly less than SCALE for series convergence.
+        // Values at or above SCALE would cause the Taylor series to diverge
+        // and produce nonsensical (very large negative) outputs.
+        if x >= Self::SCALE {
+            // Return a large negative sentinel that saturates gracefully
+            // rather than allowing the series to explode.
+            return Self::LN_DIVERGENCE_SENTINEL;
+        }
+
         let x2 = (x * x) / Self::SCALE;
         let x3 = (x2 * x) / Self::SCALE;
         // ln(1-x) ≈ -x - x^2/2 - x^3/3
@@ -76,6 +94,8 @@ pub struct DpAnalyticsContract;
 impl DpAnalyticsContract {
     /// Initializes the DP parameters with an admin and a max privacy budget (epsilon).
     pub fn init(env: Env, admin: Address, max_epsilon: i128) {
+        admin.require_auth();
+
         env.storage().instance().set(&DpDataKey::Admin, &admin);
         env.storage()
             .instance()

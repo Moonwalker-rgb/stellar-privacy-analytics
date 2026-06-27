@@ -103,6 +103,7 @@ pub enum StellarAnalyticsError {
     InvalidDecryptionKey = 14,
     VersionMismatch = 15,
     InvalidInputRange = 16,
+    OracleNotFound = 17,
 }
 
 #[contract]
@@ -585,6 +586,49 @@ impl StellarAnalytics {
 
         env.events()
             .publish((Symbol::new(&env, "oracle_added"), oracle), ());
+
+        Ok(())
+    }
+
+    /// Remove an authorized oracle (admin only)
+    pub fn remove_oracle(env: Env, oracle: Address) -> Result<(), StellarAnalyticsError> {
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&Symbol::new(&env, "admin"))
+            .ok_or(StellarAnalyticsError::NotAuthorizedOracle)?;
+
+        let caller = env.current_contract_address(); // In real implementation, get from auth
+        if caller != admin {
+            return Err(StellarAnalyticsError::NotAuthorizedOracle);
+        }
+
+        let mut oracles: Vec<Address> = env
+            .storage()
+            .instance()
+            .get(&Symbol::new(&env, "authorized_oracles"))
+            .unwrap_or_else(|| Vec::new(&env));
+
+        let mut found = false;
+        let mut new_oracles = Vec::new(&env);
+        for existing in oracles.iter() {
+            if existing == oracle && !found {
+                found = true;
+            } else {
+                new_oracles.push_back(existing);
+            }
+        }
+
+        if !found {
+            return Err(StellarAnalyticsError::OracleNotFound);
+        }
+
+        env.storage()
+            .instance()
+            .set(&Symbol::new(&env, "authorized_oracles"), &new_oracles);
+
+        env.events()
+            .publish((Symbol::new(&env, "oracle_removed"), oracle), ());
 
         Ok(())
     }
