@@ -10,6 +10,8 @@ pub enum DpError {
     Unauthorized = 11,
     /// Contract not initialized.
     NotInitialized = 12,
+    /// Contract already initialized — init can only be called once.
+    AlreadyInitialized = 13,
 }
 
 #[contracttype]
@@ -18,6 +20,7 @@ pub enum DpDataKey {
     Admin,
     MaxEpsilon,
     UsedEpsilon,
+    Initialized,
 }
 
 pub struct FixedPointMath;
@@ -75,7 +78,24 @@ pub struct DpAnalyticsContract;
 #[contractimpl]
 impl DpAnalyticsContract {
     /// Initializes the DP parameters with an admin and a max privacy budget (epsilon).
-    pub fn init(env: Env, admin: Address, max_epsilon: i128) {
+    ///
+    /// # Authorization
+    /// Requires authentication from the admin address to prevent unauthorized
+    /// initialization. The contract can only be initialized once; subsequent
+    /// calls will fail with `AlreadyInitialized`.
+    pub fn init(env: Env, admin: Address, max_epsilon: i128) -> Result<(), DpError> {
+        admin.require_auth();
+
+        // Prevent re-initialization: check the initialization flag
+        if env
+            .storage()
+            .instance()
+            .get(&DpDataKey::Initialized)
+            .unwrap_or(false)
+        {
+            return Err(DpError::AlreadyInitialized);
+        }
+
         env.storage().instance().set(&DpDataKey::Admin, &admin);
         env.storage()
             .instance()
@@ -83,6 +103,11 @@ impl DpAnalyticsContract {
         env.storage()
             .instance()
             .set(&DpDataKey::UsedEpsilon, &0i128);
+        env.storage()
+            .instance()
+            .set(&DpDataKey::Initialized, &true);
+
+        Ok(())
     }
 
     /// Returns the current privacy loss (used epsilon) for transparency.
@@ -147,6 +172,37 @@ impl DpAnalyticsContract {
 mod test {
     use super::*;
     use soroban_sdk::testutils::Address as _;
+
+    #[test]
+    fn test_init_requires_auth() {
+        let env = Env::default();
+        // No mock_all_auths() — auth must be explicit
+
+        let contract_id = env.register(DpAnalyticsContract, ());
+        let client = DpAnalyticsContractClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        // init without auth should fail
+        let result = client.try_init(&admin, &10_000);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_init_cannot_be_called_twice() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register(DpAnalyticsContract, ());
+        let client = DpAnalyticsContractClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        // First init should succeed
+        client.init(&admin, &10_000);
+
+        // Second init should fail with AlreadyInitialized
+        let result = client.try_init(&admin, &20_000);
+        assert!(result.is_err());
+    }
 
     #[test]
     fn test_dp_noise_and_budget() {
